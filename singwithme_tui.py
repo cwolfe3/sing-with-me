@@ -3,6 +3,9 @@ import subprocess as sp
 import threading
 from queue import Queue, Empty
 from enum import Enum
+from textwrap import TextWrapper
+
+text_wrapper = TextWrapper(drop_whitespace=False)
 
 def main(window):
     curses.init_pair(1, 0, 4)
@@ -44,19 +47,29 @@ def main(window):
 
 def draw(window, song):
     height, width = window.getmaxyx()
-    if curses.is_term_resized(height, width):
-        curses.update_lines_cols()
+    text_wrapper.width = width
     window.clear()
     i = 0
     for key, value in song.desc.items():
         aligned_desc = align(value, width, ALIGNMENT.CENTER)
         window.addstr(i, 0, aligned_desc, curses.color_pair(1))
         i += 1
-    top = max(0, song.row)
-    bottom = min(song.row + height - len(song.desc) - 1, len(song.lyrics))
-    for i in range(top, bottom - 4):
-        aligned_lyric = align(song.lyrics[i], width, ALIGNMENT.CENTER)
-        window.addstr(len(song.desc) + i - song.row, 0, aligned_lyric)
+    line_index = song.row
+    display_line_index = 4
+    while display_line_index < height:
+        if line_index < 0 or line_index >= len(song.lyrics):
+            display_line_index += 1
+            line_index += 1
+            continue
+        wrapped_line = text_wrapper.wrap(song.lyrics[line_index])
+        for line in wrapped_line:
+            if display_line_index >= 0 and display_line_index < height - 1: #?
+                aligned_line = align(line, width, ALIGNMENT.CENTER)
+                window.addstr(display_line_index, 0, aligned_line)
+                display_line_index += 1
+        if len(wrapped_line) == 0:
+            display_line_index += 1
+        line_index += 1
     window.addstr(0, 0, song.status)
     window.refresh()
 
