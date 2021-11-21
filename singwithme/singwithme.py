@@ -3,13 +3,16 @@ import os
 import re
 from scraper import Scraper
 
-scraper = Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div')
+scrapers = [
+        Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div')
+        ]
 
 def fetch_lyrics(name):
     lyrics = cache_lookup(name)
     if not lyrics:
         lyrics = network_lookup(name)
-        cache_store(name, lyrics)
+        if lyrics:
+            cache_store(name, lyrics)
     return lyrics
 
 
@@ -38,7 +41,11 @@ def cache_store(name, lyrics):
 
 
 def network_lookup(name):
-    return scraper.scrape(name)
+    for scraper in scrapers:
+        lyrics = scraper.scrape(name)
+        if lyrics:
+            return lyrics
+    return None
 
 
 def clean_file_name(name):
