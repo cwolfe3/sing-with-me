@@ -1,6 +1,7 @@
 import curses
 import subprocess as sp
 import threading
+from config import Config
 from queue import Queue, Empty
 from enum import Enum
 from textwrap import TextWrapper
@@ -8,8 +9,10 @@ from textwrap import TextWrapper
 text_wrapper = TextWrapper(drop_whitespace=False)
 
 def main(window):
-    curses.init_pair(1, 0, 4)
-    curses.curs_set(0)
+    config = Config('singwithme.conf')
+    curses.use_default_colors()
+    curses.init_pair(1, config.header_fg, config.header_bg)
+    curses.init_pair(2, config.body_fg, config.body_bg)
 
     song = Song()
     que = Queue()
@@ -34,43 +37,44 @@ def main(window):
         if ch == ord('q'):
             song.playing = False
         elif ch == curses.KEY_DOWN:
-            song.row += 1
+            song.line_index += 1
         elif ch == curses.KEY_UP:
-            song.row -= 1
+            song.line_index -= 1
         elif ch == curses.KEY_NPAGE:
-            song.row += 10
+            song.line_index += 10
         elif ch == curses.KEY_PPAGE:
-            song.row -= 10
+            song.line_index -= 10
 
     load_songs_t.join()
 
 
 def draw(window, song):
+    curses.curs_set(0)
     height, width = window.getmaxyx()
     text_wrapper.width = width
     window.clear()
-    i = 0
+    window_row = 0
     for key, value in song.desc.items():
         aligned_desc = align(value, width, ALIGNMENT.CENTER)
-        window.addstr(i, 0, aligned_desc, curses.color_pair(1))
-        i += 1
-    line_index = song.row
-    display_line_index = 4
-    while display_line_index < height:
+        window.insstr(window_row, 0, aligned_desc, curses.color_pair(1))
+        window_row += 1
+    line_index = song.line_index
+    while window_row < height:
         if line_index < 0 or line_index >= len(song.lyrics):
-            display_line_index += 1
+            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
+            window_row += 1
             line_index += 1
             continue
         wrapped_line = text_wrapper.wrap(song.lyrics[line_index])
-        for line in wrapped_line:
-            if display_line_index >= 0 and display_line_index < height - 1: #?
-                aligned_line = align(line, width, ALIGNMENT.CENTER)
-                window.addstr(display_line_index, 0, aligned_line)
-                display_line_index += 1
         if len(wrapped_line) == 0:
-            display_line_index += 1
+            wrapped_line = ['']
+        for line in wrapped_line:
+            if window_row >= 0 and window_row < height:
+                aligned_line = align(line, width, ALIGNMENT.CENTER)
+                window.insstr(window_row, 0, aligned_line, curses.color_pair(2))
+                window_row += 1
         line_index += 1
-    window.addstr(0, 0, song.status)
+    window.insstr(0, 0, song.status)
     window.refresh()
 
 
@@ -97,7 +101,7 @@ def load_songs(window, song, que):
             for i in range(num_lines):
                 line = que.get().strip('\n')
                 song.lyrics.append(line)
-            song.row = 0
+            song.line_index = 0
             draw(window, song)
         except Empty:
             if not song.playing:
@@ -128,7 +132,7 @@ def align(text, width, alignment):
 class Song:
     desc = {}
     lyrics = []
-    row = 0
+    line_index = 0
     playing = True
     status = ''
 
