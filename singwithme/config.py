@@ -4,7 +4,7 @@ from configparser import ConfigParser
 colors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
 
 @dataclass
-class Config():
+class Config:
 
     def __init__(self, path):
         parser = ConfigParser()
@@ -13,6 +13,7 @@ class Config():
         self.header_fg = get_color(parser, 'header_fg', 'black')
         self.body_bg = get_color(parser, 'body_bg', 'default')
         self.body_fg = get_color(parser, 'body_fg', 'white')
+
 
 def get_color(parser, key, default):
     color = default

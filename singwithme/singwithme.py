@@ -1,21 +1,9 @@
 import subprocess as sp
-from urllib.parse import unquote
-import re
-import requests
 import os
+import re
+from scraper import Scraper
 
-redirect_pattern = re.compile('.*?uddg=(.*?)&rut=.*')
-lyrics_pattern = re.compile('class="Lyrics__Container.*?>(.*?)</div', re.DOTALL)
-replacements = {
-        '<br>' : '\n',
-        '<br/>' : '\n',
-        '<br />' : '\n',
-        '<.*?>' : '',
-        '&#x27;' : '\'',
-        '&quot;' : '"',
-        '&amp;' : '&'
-        }
-
+scraper = Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div')
 
 def fetch_lyrics(name):
     lyrics = cache_lookup(name)
@@ -50,19 +38,7 @@ def cache_store(name, lyrics):
 
 
 def network_lookup(name):
-    search_query = name + ' site:genius.com !'
-    url = 'https://duckduckgo.com/'
-    headers = {'user-agent': 'lyrics-fetching'}
-    params = {'q': search_query}
-    response = requests.get(url, params=params, headers=headers)
-    redirect_url = unquote(redirect_pattern.match(response.text).group(1))
-    response = requests.get(redirect_url)
-
-    lyrics = '\n'.join(lyrics_pattern.findall(response.text))
-    lyrics = strip_html(lyrics)
-    lyrics = lyrics.splitlines()
-    lyrics = [line + '\n' for line in lyrics]
-    return lyrics
+    return scraper.scrape(name)
 
 
 def clean_file_name(name):
@@ -86,12 +62,6 @@ def main():
             lyrics = fetch_lyrics(title + ' ' + artist)
             print(str(len(lyrics)))
             print(''.join(lyrics), flush=True, end='')
-
-
-def strip_html(text):
-    for key, value in replacements.items():
-        text = ''.join(re.sub(key, value, text))
-    return text
 
 
 if __name__ == '__main__':
