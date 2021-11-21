@@ -53,7 +53,7 @@ def draw(window, song):
     line_index = song.line_index
     while window_row < height:
         if line_index < 0 or line_index >= len(song.lyrics):
-#            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
+            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
             window_row += 1
             line_index += 1
             continue
