@@ -48,8 +48,9 @@ def draw(window, song):
     window_row = 0
     for key, value in song.desc.items():
         aligned_desc = align(value, width, ALIGNMENT.CENTER)
-        window.addstr(window_row, 0, aligned_desc, curses.color_pair(1))
-        window_row += 1
+        if window_row < height:
+            window.insstr(window_row, 0, aligned_desc, curses.color_pair(1))
+            window_row += 1
     line_index = song.line_index
     while window_row < height:
         if line_index < 0 or line_index >= len(song.lyrics):
@@ -66,7 +67,6 @@ def draw(window, song):
                 window.insstr(window_row, 0, aligned_line, curses.color_pair(2))
                 window_row += 1
         line_index += 1
-    window.insstr(0, 0, song.status)
     window.refresh()
 
 
