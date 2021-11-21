@@ -3,6 +3,7 @@ import requests
 from urllib.parse import unquote
 
 replacements = {
+        '\n' : '',
         '<br>' : '\n',
         '<br/>' : '\n',
         '<br />' : '\n',

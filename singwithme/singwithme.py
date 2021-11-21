@@ -4,7 +4,8 @@ import re
 from scraper import Scraper
 
 scrapers = [
-        Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div')
+        Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div'),
+        Scraper('azlyrics.com', 'class="lyricsh">.*?<div>.*?>(.*?)</div'),
         ]
 
 def fetch_lyrics(name):
