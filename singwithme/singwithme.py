@@ -53,24 +53,27 @@ def clean_file_name(name):
     return re.sub('[^a-zA-Z0-9_\-]*', '', name)
 
 
-def main():
+class Song:
+    desc = {}
+    lyrics = []
+    line_index = 0
+    playing = True
+    status = ''
+
+
+def start(song):
     format = '{{title}}#@{{artist}}#@{{album}}'
     cmd = 'playerctl -F -p ncspot,spotify,Spotify,%any metadata --format'.split()
     cmd.append(format)
+    song.playing = True
     with sp.Popen(cmd, stdout=sp.PIPE) as process:
         while True:
             title, artist, album = process.stdout.readline().decode('utf-8').split('#@')
-            print(str(3))
-            print('Title')
-            print(title)
-            print('Artist')
-            print(artist)
-            print('Album')
-            print(album, end='', flush=True)
+            song.desc['title'] = title
+            song.desc['artist'] = artist
+            song.desc['album'] = album.strip('\n')
+            song.lyrics = ['Loading...']
             lyrics = fetch_lyrics(title + ' ' + artist + ' ' + album)
-            print(str(len(lyrics)))
-            print(''.join(lyrics), flush=True, end='')
+            song.lyrics = lyrics
 
 
-if __name__ == '__main__':
-    main()

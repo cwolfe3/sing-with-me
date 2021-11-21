@@ -1,6 +1,8 @@
 import curses
 import subprocess as sp
 import threading
+import singwithme
+import sys
 from config import Config
 from queue import Queue, Empty
 from enum import Enum
@@ -13,27 +15,17 @@ def main(window):
     curses.use_default_colors()
     curses.init_pair(1, config.header_fg, config.header_bg)
     curses.init_pair(2, config.body_fg, config.body_bg)
+    curses.halfdelay(2)
 
-    song = Song()
-    que = Queue()
+    song = singwithme.Song()
 
-    load_songs_t = threading.Thread(target=load_songs, 
-                                    args=(window, song, que))
+    load_songs_t = threading.Thread(target=singwithme.start, args=(song,), 
+                                    daemon=True)
     load_songs_t.start()
-
-    cmd = 'python singwithme.py'.split()
-    proc = sp.Popen(cmd, stdout=sp.PIPE)
-    read_songs_t = threading.Thread(target=read_songs, args=(proc.stdout, que))
-    read_songs_t.daemon = True
-    read_songs_t.start()
 
     while song.playing:
         draw(window, song)
-        try:
-            ch = window.getch()
-        except:
-            song.playing = False
-            break 
+        ch = window.getch()
         if ch == ord('q'):
             song.playing = False
         elif ch == curses.KEY_DOWN:
@@ -45,23 +37,23 @@ def main(window):
         elif ch == curses.KEY_PPAGE:
             song.line_index -= 10
 
-    load_songs_t.join()
+    draw(window, song)
 
 
 def draw(window, song):
     curses.curs_set(0)
+    window.clear()
     height, width = window.getmaxyx()
     text_wrapper.width = width
-    window.clear()
     window_row = 0
     for key, value in song.desc.items():
         aligned_desc = align(value, width, ALIGNMENT.CENTER)
-        window.insstr(window_row, 0, aligned_desc, curses.color_pair(1))
+        window.addstr(window_row, 0, aligned_desc, curses.color_pair(1))
         window_row += 1
     line_index = song.line_index
     while window_row < height:
         if line_index < 0 or line_index >= len(song.lyrics):
-            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
+#            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
             window_row += 1
             line_index += 1
             continue
@@ -76,36 +68,6 @@ def draw(window, song):
         line_index += 1
     window.insstr(0, 0, song.status)
     window.refresh()
-
-
-def read_songs(out, que):
-    while True:
-        que.put(out.readline().decode('utf-8'))
-
-
-def load_songs(window, song, que):
-    #curses.halfdelay(1)
-    while song.playing:
-        try:
-            num_desc = int(que.get(block=True, timeout=0.1))
-            song.desc = {}
-            for i in range(num_desc):
-                key = que.get().strip('\n')
-                value = que.get().strip('\n')
-                song.desc[key] = value
-
-            song.lyrics = ['Loading...']
-            draw(window, song) # In case we need to wait for lyrics
-            song.lyrics = []
-            num_lines = int(que.get())
-            for i in range(num_lines):
-                line = que.get().strip('\n')
-                song.lyrics.append(line)
-            song.line_index = 0
-            draw(window, song)
-        except Empty:
-            if not song.playing:
-                break
 
 
 class ALIGNMENT(Enum):
@@ -127,14 +89,5 @@ def align(text, width, alignment):
         right_pad = extra - left_pad
         text = (' ' * left_pad) + text + (' ' * right_pad)
     return text
-
-
-class Song:
-    desc = {}
-    lyrics = []
-    line_index = 0
-    playing = True
-    status = ''
-
 
 curses.wrapper(main)
