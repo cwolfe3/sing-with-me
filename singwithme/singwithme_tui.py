@@ -3,7 +3,7 @@ import subprocess as sp
 import threading
 import singwithme
 import sys
-from config import Config
+from config import load_config
 from queue import Queue, Empty
 from enum import Enum
 from textwrap import TextWrapper
@@ -11,10 +11,12 @@ from textwrap import TextWrapper
 text_wrapper = TextWrapper(drop_whitespace=False)
 
 def main(window):
-    config = Config('singwithme.conf')
+    global cf
+    cf = load_config('singwithme.conf')
     curses.use_default_colors()
-    curses.init_pair(1, config.header_fg, config.header_bg)
-    curses.init_pair(2, config.body_fg, config.body_bg)
+    colors = cf['colors']
+    curses.init_pair(1, colors.getint('header_fg'), colors.getint('header_bg'))
+    curses.init_pair(2, colors.getint('body_fg'), colors.getint('body_bg'))
     curses.halfdelay(2)
 
     song = singwithme.Song()
@@ -28,6 +30,15 @@ def main(window):
         ch = window.getch()
         if ch == ord('q'):
             song.playing = False
+        elif ch == ord('h'):
+            cf['header']['visible'] = not cf['header']['visible']
+        elif ch == ord('l'):
+            cf['body']['visible'] = not cf['body']['visible']
+        elif ch == ord('r'):
+            cf = load_config('singwithme.conf')
+            colors = cf['colors']
+            curses.init_pair(1, colors.getint('header_fg'), colors.getint('header_bg'))
+            curses.init_pair(2, colors.getint('body_fg'), colors.getint('body_bg'))
         elif ch == curses.KEY_DOWN:
             song.line_index += 1
         elif ch == curses.KEY_UP:
@@ -45,28 +56,38 @@ def draw(window, song):
     window.clear()
     height, width = window.getmaxyx()
     text_wrapper.width = width
+
     window_row = 0
-    for key, value in song.desc.items():
-        aligned_desc = align(value, width, ALIGNMENT.CENTER)
-        if window_row < height:
-            window.insstr(window_row, 0, aligned_desc, curses.color_pair(1))
-            window_row += 1
-    line_index = song.line_index
-    while window_row < height:
-        if line_index < 0 or line_index >= len(song.lyrics):
-            window.insstr(window_row, 0, ''.rjust(width), curses.color_pair(2))
-            window_row += 1
-            line_index += 1
-            continue
-        wrapped_line = text_wrapper.wrap(song.lyrics[line_index])
-        if len(wrapped_line) == 0:
-            wrapped_line = ['']
-        for line in wrapped_line:
-            if window_row >= 0 and window_row < height:
-                aligned_line = align(line, width, ALIGNMENT.CENTER)
-                window.insstr(window_row, 0, aligned_line, curses.color_pair(2))
+    if cf['header'].getboolean('visible'):
+        desc = cf['header']['format']
+        desc = desc.replace('!title', song.desc.get('title', 'unknown title'))
+        desc = desc.replace('!artist', song.desc.get('artist', 'unknown artist'))
+        desc = desc.replace('!album', song.desc.get('album', 'unknown album'))
+        desc = desc.split('\n')
+        for line in desc:
+            if window_row < height:
+                line = align(line, width, ALIGNMENT.CENTER)
+                window.insstr(window_row, 0, line, curses.color_pair(1))
                 window_row += 1
-        line_index += 1
+
+    line_index = song.line_index
+    if cf['body'].getboolean('visible'):
+        while window_row < height:
+            if line_index < 0 or line_index >= len(song.lyrics):
+                window.insstr(window_row, 0, '' * width, curses.color_pair(2))
+                window_row += 1
+                line_index += 1
+                continue
+            wrapped_line = text_wrapper.wrap(song.lyrics[line_index])
+            if len(wrapped_line) == 0:
+                wrapped_line = ['']
+            for line in wrapped_line:
+                if window_row >= 0 and window_row < height:
+                    line = align(line, width, ALIGNMENT.CENTER)
+                    window.insstr(window_row, 0, line, curses.color_pair(2))
+                    window_row += 1
+            line_index += 1
+
     window.refresh()
 
 

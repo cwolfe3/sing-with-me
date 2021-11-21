@@ -1,24 +1,39 @@
-from dataclasses import dataclass
-from configparser import ConfigParser
+from configparser import SafeConfigParser
 
 colors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+defaults = {
+        'colors': {
+            'header_bg': 'blue',
+            'header_fg': 'black',
+            'body_bg': 'default',
+            'body_fg': 'white',
+            },
+        'header': {
+            'format': '!title\n!artist\n!album',
+            'visible': True,
+            },
+        'body': {
+            'visible': True,
+            }
+    }
 
-@dataclass
-class Config:
+def load_config(path=''):
+    config = SafeConfigParser(strict=False)
+    config.read_dict(defaults)
+    config.read(path)
 
-    def __init__(self, path):
-        parser = ConfigParser()
-        parser.read(path)
-        self.header_bg = get_color(parser, 'header_bg', 'blue')
-        self.header_fg = get_color(parser, 'header_fg', 'black')
-        self.body_bg = get_color(parser, 'body_bg', 'default')
-        self.body_fg = get_color(parser, 'body_fg', 'white')
+    for section in config.sections():
+        if section not in defaults.keys():
+            continue
+        for key, value in config.items(section):
+            if key not in defaults[section].keys():
+                raise Exception('Unsupported config key: ' + key)
 
-
-def get_color(parser, key, default):
-    color = default
-    if parser.has_section('colors') and parser.has_option('colors', key):
-        color = parser.get('colors', key)
-    if color in colors:
-        return colors.index(color)
-    return -1
+    for key, color in config['colors'].items():
+        if color in colors:
+            config.set('colors', key, str(colors.index(color)))
+        elif color == 'default':
+            config.set('colors', key, str(-1))
+        elif int(color) not in range(-1, 8):
+            raise Exception('Invalid color: ' + color, str(key))
+    return config
