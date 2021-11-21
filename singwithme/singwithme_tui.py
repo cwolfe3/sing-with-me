@@ -31,9 +31,11 @@ def main(window):
         if ch == ord('q'):
             song.playing = False
         elif ch == ord('h'):
-            cf['header']['visible'] = not cf['header']['visible']
-        elif ch == ord('l'):
-            cf['body']['visible'] = not cf['body']['visible']
+            visible = cf['header'].getboolean('visible')
+            cf.set('header', 'visible', str(not visible))
+        elif ch == ord('b'):
+            visible = cf['body'].getboolean('visible')
+            cf.set('body', 'visible', str(not visible))
         elif ch == ord('r'):
             cf = load_config('singwithme.conf')
             colors = cf['colors']
