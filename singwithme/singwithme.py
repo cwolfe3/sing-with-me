@@ -67,7 +67,7 @@ def main():
             print(artist)
             print('Album')
             print(album, end='', flush=True)
-            lyrics = fetch_lyrics(title + ' ' + artist)
+            lyrics = fetch_lyrics(title + ' ' + artist + ' ' + album)
             print(str(len(lyrics)))
             print(''.join(lyrics), flush=True, end='')
 
