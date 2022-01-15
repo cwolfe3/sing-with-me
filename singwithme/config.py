@@ -9,7 +9,7 @@ defaults = {
             'body_fg': 'white',
             },
         'header': {
-            'format': '!title\n!artist\n!album',
+            'format': '!title by !artist',
             'visible': True,
             },
         'body': {
