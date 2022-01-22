@@ -4,7 +4,7 @@ For downloading and displaying lyrics for songs that are playing on an MPRIS cli
 
 ## Requirements  
 python  
-playerctl
+playerctl  
 curses
 
 ## Usage
