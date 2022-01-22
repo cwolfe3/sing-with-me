@@ -75,7 +75,7 @@ def start(song):
             song.lyrics = ['Loading...']
             lyrics = fetch_lyrics(title + ' ' + artist + ' ' + album)
             if not lyrics:
-                lyrics = ['Lyrics not found']
+                lyrics = ['Either no lyrics were found, or there\'s a network error.']
             song.lyrics = lyrics
 
 

@@ -21,15 +21,25 @@ class Scraper:
         url = 'https://duckduckgo.com/'
         headers = {'user-agent': 'lyrics-fetching'}
         params = {'q': search_query}
-        response = requests.get(url, params=params, headers=headers)
-        redirect_url = unquote(redirect_pattern.match(response.text).group(1))
-        response = requests.get(redirect_url)
+        error = False
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=3.5)
+            try:
+                redirect_url = unquote(redirect_pattern.match(response.text).group(1))
+                response = requests.get(redirect_url, timeout=3.5)
+            except:
+                error = True
+        except:
+            error = True
 
-        lyrics = '\n'.join(self.pattern.findall(response.text))
-        lyrics = strip_html(lyrics)
-        lyrics = lyrics.splitlines()
-        lyrics = [line + '\n' for line in lyrics]
-        return lyrics
+        if error:
+            return None
+        else:
+            lyrics = '\n'.join(self.pattern.findall(response.text))
+            lyrics = strip_html(lyrics)
+            lyrics = lyrics.splitlines()
+            lyrics = [line + '\n' for line in lyrics]
+            return lyrics
 
 
     def __init__(self, site, regex):
