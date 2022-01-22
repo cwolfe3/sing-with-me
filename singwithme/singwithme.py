@@ -6,6 +6,7 @@ from scraper import Scraper
 scrapers = [
         Scraper('genius.com', 'class="Lyrics__Container.*?>(.*?)</div'),
         Scraper('azlyrics.com', 'class="lyricsh">.*?<div>.*?>(.*?)</div'),
+        Scraper('lyrics.com', 'id="lyric-body-text".*?>(.*?)</pre>'),
         ]
 
 def fetch_lyrics(name):
